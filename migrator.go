@@ -5,8 +5,6 @@ import (
 )
 
 const (
-	defaultMigrationTableName = "migrations"
-
 	actionMigrate = iota
 	actionRollback
 
@@ -15,6 +13,8 @@ const (
 	migrationFailed       = "migration failed"
 	migrationExecuted     = "migration executed"
 )
+
+var defaultMigrationTableName = "migrations"
 
 // IMigrator manages migrations in the project
 type IMigrator interface {
@@ -58,6 +58,15 @@ type Migrator struct {
 	availableCount int
 }
 
+type migration struct {
+	Id        int    `gorm:"primaryKey;autoIncrement;type:uint;size:10;not null"`
+	Migration string `gorm:"type:string;size:191;not null"`
+}
+
+func (migration) TableName() string {
+	return defaultMigrationTableName
+}
+
 func NewMigrator(migrations []Migration, config Config) (*Migrator, error) {
 	if config.Logger == nil {
 		config.Logger = NewStdoutLogger(true)
@@ -67,8 +76,8 @@ func NewMigrator(migrations []Migration, config Config) (*Migrator, error) {
 		config:     config,
 	}
 
-	if m.config.Table == "" {
-		m.config.Table = defaultMigrationTableName
+	if m.config.Table != "" {
+		defaultMigrationTableName = m.config.Table
 	}
 
 	err := m.createMigrationTable()
@@ -81,13 +90,7 @@ func NewMigrator(migrations []Migration, config Config) (*Migrator, error) {
 
 // create migration table in database
 func (m *Migrator) createMigrationTable() error {
-	return m.config.Db.Exec(
-		"CREATE TABLE IF NOT EXISTS `" + m.config.Table + "` (" +
-			"  `id` INT (10) UNSIGNED NOT NULL AUTO_INCREMENT, " +
-			"  `migration` VARCHAR (191) NOT NULL," +
-			"  PRIMARY KEY (`id`)" +
-			") ENGINE = INNODB",
-	).Error
+	return m.config.Db.AutoMigrate(migration{})
 }
 
 // get list of executed migrations from migrations repository
@@ -95,7 +98,7 @@ func (m *Migrator) getExecutedMigrationList() ([]string, error) {
 	var list []string
 
 	err := m.config.Db.
-		Table(m.config.Table).
+		Table(defaultMigrationTableName).
 		Select("migration").
 		Order("id asc").
 		Scan(&list).Error
@@ -105,12 +108,12 @@ func (m *Migrator) getExecutedMigrationList() ([]string, error) {
 
 // mark migration as executed by adding it to migrations repository
 func (m *Migrator) markMigrationExecuted(id string, tx *gorm.DB) error {
-	return tx.Exec("insert into `"+m.config.Table+"` (`migration`) values (?)", id).Error
+	return tx.Exec("insert into "+defaultMigrationTableName+" (migration) values (?)", id).Error
 }
 
 // remove migration from executed list - remove it from migrations repository
 func (m *Migrator) removeMigrationExecutedMark(id string, tx *gorm.DB) error {
-	return tx.Exec("delete from `"+m.config.Table+"` where `migration` = ?", id).Error
+	return tx.Exec("delete from "+defaultMigrationTableName+" where migration = ?", id).Error
 }
 
 // execute specified migration handlers in transaction
