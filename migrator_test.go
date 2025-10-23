@@ -255,7 +255,7 @@ func createMigrator(
 
 func expectCreateTable(mock sqlmock.Sqlmock, migrationTable string) {
 	mock.
-		ExpectExec(regexp.QuoteMeta("CREATE TABLE IF NOT EXISTS `" + migrationTable + "` ( `id` INT (10) UNSIGNED NOT NULL AUTO_INCREMENT, `migration` VARCHAR (191) NOT NULL, PRIMARY KEY (`id`)) ENGINE = INNODB")).
+		ExpectExec(regexp.QuoteMeta("CREATE TABLE `" + migrationTable + "` (`id` smallint unsigned AUTO_INCREMENT NOT NULL,`migration` varchar(191) NOT NULL,PRIMARY KEY (`id`))")).
 		WithArgs().
 		WillReturnResult(sqlmock.NewResult(0, 0))
 }
@@ -294,7 +294,7 @@ func expectSuccessExecute(
 			ExpectExec(regexp.QuoteMeta("execute " + migration.Id)).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 		mock.
-			ExpectExec(regexp.QuoteMeta("insert into `" + migrationTable + "` (`migration`) values (?)")).
+			ExpectExec(regexp.QuoteMeta("insert into " + migrationTable + " (migration) values (?)")).
 			WithArgs(migration.Id).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 		mock.ExpectCommit()
