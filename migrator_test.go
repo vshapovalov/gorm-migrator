@@ -314,7 +314,7 @@ func expectSuccessRollback(
 			ExpectExec(regexp.QuoteMeta("rollback " + migration.Id)).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 		mock.
-			ExpectExec(regexp.QuoteMeta("delete from `" + migrationTable + "` where `migration` = ?")).
+			ExpectExec(regexp.QuoteMeta("delete from " + migrationTable + " where migration = ?")).
 			WithArgs(migration.Id).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 		mock.ExpectCommit()
